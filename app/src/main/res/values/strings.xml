@@ -8,6 +8,7 @@
     <string name="patio_action_cancel">Cancelar</string>
 
     <string name="patio_thumbnails_message">%1$d de %2$d imágenes agregadas</string>
+    <string name="patio_footer">%1$d of %2$d</string>
 
     <string name="hello_world">hello world.</string>
     <string name="action_settings">Settings</string>

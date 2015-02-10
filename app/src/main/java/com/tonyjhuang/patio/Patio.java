@@ -99,7 +99,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         Parcelable superState = super.onSaveInstanceState();
 
         SavedState savedState = new SavedState(superState);
-        savedState.setThumbnailsPaths(getThumbnailsPaths());
+        savedState.setThumbnailsPaths(getThumbnailsUris());
         savedState.setTakePicturePath(mTakePicturePath);
 
         return savedState;
@@ -110,7 +110,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         SavedState savedState = (SavedState) state;
         super.onRestoreInstanceState(savedState.getSuperState());
 
-        ArrayList<String> thumbnailsPaths = savedState.getThumbnailsPaths();
+        ArrayList<Uri> thumbnailsPaths = savedState.getThumbnailsPaths();
         String takePicturePath = savedState.getTakePicturePath();
 
         restoreState(thumbnailsPaths, takePicturePath);
@@ -212,14 +212,14 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         updateThumbnailsMessage();
     }
 
-    public void restoreState(ArrayList<String> thumbnailsPaths, String takePicturePath) {
-        for(String thumbnailPath : thumbnailsPaths) {
-            addThumbnail(thumbnailPath);
+    public void restoreState(ArrayList<Uri> thumbnailsPaths, String takePicturePath) {
+        for(Uri thumbnailUri : thumbnailsPaths) {
+            addThumbnail(thumbnailUri);
         }
         mTakePicturePath = takePicturePath;
     }
 
-    public void addThumbnail(String thumbnailPath) {
+    public void addThumbnail(Uri thumbnailUri) {
         LayoutInflater inflater = LayoutInflater.from(mContext);
         ImageView imageView = (ImageView) inflater.inflate(THUMBNAIL_LAYOUT_RES_ID, mThumbnailsContainer, false);
 
@@ -227,7 +227,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
                 Float.valueOf(mThumbnailWidth).intValue() :
                 Float.valueOf(mThumbnailHeight).intValue();
         Picasso.with(mContext)
-                .load(new File(thumbnailPath))
+                .load(thumbnailUri)
                 .resize(resizeDimension, resizeDimension)
                 .centerCrop()
                 .into(imageView);
@@ -238,7 +238,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         mThumbnailsContainer.addView(imageView, 0, layoutParams);
         imageView.setOnClickListener(this);
 
-        mPatioThumbnails.add(new PatioThumbnail(thumbnailPath, imageView));
+        mPatioThumbnails.add(new PatioThumbnail(thumbnailUri, imageView));
         updateThumbnailsMessage();
     }
 
@@ -287,7 +287,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
     public void handleTakePictureResult(Intent data) {
         Log.d(TAG, "File Path: " + mTakePicturePath);
 
-        addThumbnail(mTakePicturePath);
+        addThumbnail(Uri.fromFile(new File(mTakePicturePath)));
         PatioUtils.addNewImageToGallery(mContext, mTakePicturePath);
     }
 
@@ -296,7 +296,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         String filePath = PatioUtils.getRealPathFromURI(mContext, uri);
         Log.d(TAG, "File Path: " + filePath);
 
-        addThumbnail(filePath);
+        addThumbnail(uri);
     }
 
     public void showAddToolbar() {
@@ -349,10 +349,10 @@ public class Patio extends LinearLayout implements View.OnClickListener {
             showAddToolbar();
     }
 
-    public ArrayList<String> getThumbnailsPaths() {
-        ArrayList<String> thumbnailsPaths = new ArrayList<String>();
+    public ArrayList<Uri> getThumbnailsUris() {
+        ArrayList<Uri> thumbnailsPaths = new ArrayList<Uri>();
         for(PatioThumbnail patioThumbnail : mPatioThumbnails) {
-            thumbnailsPaths.add(patioThumbnail.getThumbnailPath());
+            thumbnailsPaths.add(patioThumbnail.getThumbnailUri());
         }
         return thumbnailsPaths;
     }
@@ -404,7 +404,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
      * SavedState class for restoring view state
      */
     protected static class SavedState extends BaseSavedState {
-        public ArrayList<String> mThumbnailsPaths;
+        public ArrayList<Uri> mThumbnailsPaths;
         private String mTakePictureFilePath;
 
         public SavedState(Parcelable superState) {
@@ -433,10 +433,10 @@ public class Patio extends LinearLayout implements View.OnClickListener {
             }
         };
 
-        public void setThumbnailsPaths(ArrayList<String> thumbnailsPaths) {
+        public void setThumbnailsPaths(ArrayList<Uri> thumbnailsPaths) {
             mThumbnailsPaths = thumbnailsPaths;
         }
-        public ArrayList<String> getThumbnailsPaths() {
+        public ArrayList<Uri> getThumbnailsPaths() {
             return mThumbnailsPaths;
         }
 

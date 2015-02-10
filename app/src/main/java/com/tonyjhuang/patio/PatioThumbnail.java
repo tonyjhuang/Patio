@@ -1,18 +1,19 @@
 package com.tonyjhuang.patio;
 
+import android.net.Uri;
 import android.widget.ImageView;
 
 public class PatioThumbnail {
-    private String mThumbnailPath;
+    private Uri mThumbnailUri;
     private ImageView mThumbnailView;
 
-    public PatioThumbnail(String thumbnailPath, ImageView thumbnailView) {
-        mThumbnailPath = thumbnailPath;
+    public PatioThumbnail(Uri thumbnailUri, ImageView thumbnailView) {
+        mThumbnailUri = thumbnailUri;
         mThumbnailView = thumbnailView;
     }
 
-    public String getThumbnailPath() {
-        return mThumbnailPath;
+    public Uri getThumbnailUri() {
+        return mThumbnailUri;
     }
 
     public ImageView getThumbnailView() {
