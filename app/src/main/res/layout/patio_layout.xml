@@ -1,20 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Toolbars-->
-    <FrameLayout
+    <RelativeLayout
+        android:animateLayoutChanges="true"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <include layout="@layout/patio_add_actions_toolbar" />
+        <include
+            android:id="@+id/patio_add_actions_toolbar"
+            layout="@layout/patio_add_actions_toolbar" />
 
-        <include layout="@layout/patio_remove_actions_toolbar" />
-    </FrameLayout>
-
-    <!-- Thumbnails Container -->
-    <FrameLayout
-        android:id="@+id/patio_thumbnail_container"
-        android:layout_width="match_parent"
-        android:layout_height="256dp"
-        android:layout_gravity="center" />
+        <!-- Thumbnails Container -->
+        <FrameLayout
+            android:id="@+id/patio_thumbnail_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/patio_add_actions_toolbar"
+            android:layout_gravity="center" />
+    </RelativeLayout>
 </merge>

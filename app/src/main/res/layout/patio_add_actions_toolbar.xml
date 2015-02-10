@@ -4,6 +4,7 @@
     android:id="@+id/patio_add_actions_toolbar"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="#fff3f3f3"
     android:orientation="horizontal">
 
     <Button

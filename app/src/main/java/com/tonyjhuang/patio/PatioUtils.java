@@ -15,15 +15,6 @@ import java.util.Date;
 public class PatioUtils {
 
     public static String getRealPathFromURI(Context context, Uri contentUri) {
-        /*String result = null;
-        Cursor cursor = context.getContentResolver().query(contentUri, null, null, null, null);
-        if(cursor != null) {
-            cursor.moveToFirst();
-            int idx = cursor.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
-            result = cursor.getString(idx);
-            cursor.close();
-        }
-        return result;*/
         Cursor cursor = null;
         try {
             String[] proj = { MediaStore.Images.Media.DATA };

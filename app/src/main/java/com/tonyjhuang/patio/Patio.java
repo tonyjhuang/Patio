@@ -16,10 +16,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
-import com.easyandroidanimations.library.Animation;
-import com.easyandroidanimations.library.SlideInAnimation;
-import com.easyandroidanimations.library.SlideOutAnimation;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -50,13 +46,10 @@ public class Patio extends LinearLayout implements
     //Actions
     public Button mTakePicture;
     public Button mAttachPicture;
-    public Button mRemovePicture;
-    public Button mCancel;
     //Containers
     public FrameLayout mThumbnailsContainer;
     //Toolbars
     public LinearLayout mToolbarAddActions;
-    public LinearLayout mToolbarRemoveActions;
 
     //TODO: http://ryanharter.com/blog/2014/08/29/building-dynamic-custom-views/
 
@@ -127,21 +120,15 @@ public class Patio extends LinearLayout implements
         //Buttons
         mTakePicture = (Button) findViewById(R.id.patio_action_take_picture);
         mAttachPicture = (Button) findViewById(R.id.patio_action_attach_picture);
-        mRemovePicture = (Button) findViewById(R.id.patio_action_remove_picture);
-        mCancel = (Button) findViewById(R.id.patio_action_cancel);
         //Containers
         mThumbnailsContainer = (FrameLayout) findViewById(R.id.patio_thumbnail_container);
         //Toolbars
         mToolbarAddActions = (LinearLayout) findViewById(R.id.patio_add_actions_toolbar);
-        mToolbarRemoveActions = (LinearLayout) findViewById(R.id.patio_remove_actions_toolbar);
-        mToolbarRemoveActions.setVisibility(View.GONE);
 
         //Set actions listeners
         if (!isInEditMode()) {
             mTakePicture.setOnClickListener(this);
             mAttachPicture.setOnClickListener(this);
-            mRemovePicture.setOnClickListener(this);
-            mCancel.setOnClickListener(this);
         }
 
         //Get defined attributes
@@ -161,8 +148,6 @@ public class Patio extends LinearLayout implements
         //Setup actions text color
         mTakePicture.setTextColor(actionsTextColor);
         mAttachPicture.setTextColor(actionsTextColor);
-        mRemovePicture.setTextColor(actionsTextColor);
-        mCancel.setTextColor(actionsTextColor);
 
         //Setup thumbnails container background
         mThumbnailsContainer.setBackgroundColor(thumbnailContainerBackground);
@@ -185,6 +170,7 @@ public class Patio extends LinearLayout implements
     }
 
     public void setThumbnail(Uri thumbnailUri) {
+        showAddToolbar(false);
         removeCurrentThumbnail();
 
         int resizeDimension = (int) mThumbnailContainerHeight;
@@ -241,35 +227,20 @@ public class Patio extends LinearLayout implements
         setThumbnail(uri);
     }
 
-    public void showAddToolbar() {
-        if (mToolbarAddActions.getVisibility() == View.VISIBLE)
-            return;
-
-        new SlideOutAnimation(mToolbarRemoveActions).setDirection(Animation.DIRECTION_UP).animate();
-        new SlideInAnimation(mToolbarAddActions).setDirection(Animation.DIRECTION_UP).animate();
-    }
-
-    public void showRemoveToolbar() {
-        if (mToolbarRemoveActions.getVisibility() == View.VISIBLE)
-            return;
-
-        new SlideOutAnimation(mToolbarAddActions).setDirection(Animation.DIRECTION_UP).animate();
-        new SlideInAnimation(mToolbarRemoveActions).setDirection(Animation.DIRECTION_UP).animate();
-    }
-
-    public void cancelThumbnailSelection() {
-        mPatioThumbnail.setSelected(false);
-        checkToolbarsStatus();
+    public void showAddToolbar(boolean show) {
+       /* Animation animation;
+        if(show) {
+            animation = new SlideInAnimation(mToolbarAddActions).setDirection(Animation.DIRECTION_UP);
+        } else {
+            animation = new SlideOutAnimation(mToolbarAddActions).setDirection(Animation.DIRECTION_UP);
+        }
+        animation.animate();*/
     }
 
     public void removeCurrentThumbnail() {
         mThumbnailsContainer.removeView(mPatioThumbnail);
         mPatioThumbnail = null;
-        checkToolbarsStatus();
-    }
-
-    public void checkToolbarsStatus() {
-        showAddToolbar();
+        showAddToolbar(true);
     }
 
     public Uri getThumbnailUri() {
@@ -288,12 +259,6 @@ public class Patio extends LinearLayout implements
             }
             if (view.getId() == R.id.patio_action_attach_picture) {
                 mListener.onAddPictureClick();
-            }
-            if (view.getId() == R.id.patio_action_remove_picture) {
-                removeCurrentThumbnail();
-            }
-            if (view.getId() == R.id.patio_action_cancel) {
-                cancelThumbnailSelection();
             }
         }
     }
