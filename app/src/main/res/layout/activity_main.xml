@@ -16,11 +16,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         app:actionsTextColor="#333"
-        app:maxPictures="3"
-        app:thumbnailHeight="200dp"
-        app:thumbnailWidth="200dp"
-        app:thumbnailsContainerBackground="#ddd"
-        app:thumbnailsContainerPadding="10dp"
-        app:thumbnailsMessage="@string/patio_footer" />
+        app:thumbnailContainerHeight="200dp"
+        app:thumbnailContainerBackground="#ddd"
+        app:thumbnailContainerPadding="10dp" />
 
 </RelativeLayout>

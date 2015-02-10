@@ -2,7 +2,6 @@ package com.tonyjhuang.patio;
 
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.net.Uri;
 import android.os.Parcel;
@@ -14,43 +13,36 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.HorizontalScrollView;
-import android.widget.ImageView;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 import com.easyandroidanimations.library.Animation;
 import com.easyandroidanimations.library.SlideInAnimation;
 import com.easyandroidanimations.library.SlideOutAnimation;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
-public class Patio extends LinearLayout implements View.OnClickListener {
+public class Patio extends LinearLayout implements
+        View.OnClickListener,
+        PatioThumbnail.OnRemoveClickListener {
 
     /**
      * Constants
      */
     public final static String TAG = Patio.class.getSimpleName();
-    public final static int DEFAULT_MAX_PICTURES = 3;
 
     /**
      * Variables
      */
     private final int WIDGET_LAYOUT_RES_ID = R.layout.patio_layout;
-    private final int THUMBNAIL_LAYOUT_RES_ID = R.layout.patio_thumbnail;
     private Context mContext;
-    private int mMaxPictures;
     private PatioCallbacks mListener;
-    private ArrayList<PatioThumbnail> mPatioThumbnails;
+    private PatioThumbnail mPatioThumbnail;
     private String mTakePicturePath;
 
     //Resources
-    private float mThumbnailWidth;
-    private float mThumbnailHeight;
-    private String mThumbnailsMessageString;
+    private float mThumbnailContainerHeight;
 
     /**
      * Controls
@@ -61,9 +53,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
     public Button mRemovePicture;
     public Button mCancel;
     //Containers
-    public HorizontalScrollView mThumbnailsWrapper;
-    public LinearLayout mThumbnailsContainer;
-    public TextView mThumbnailsCount;
+    public FrameLayout mThumbnailsContainer;
     //Toolbars
     public LinearLayout mToolbarAddActions;
     public LinearLayout mToolbarRemoveActions;
@@ -99,7 +89,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         Parcelable superState = super.onSaveInstanceState();
 
         SavedState savedState = new SavedState(superState);
-        savedState.setThumbnailsPaths(getThumbnailsUris());
+        savedState.setThumbnailsPath(getThumbnailUri());
         savedState.setTakePicturePath(mTakePicturePath);
 
         return savedState;
@@ -110,10 +100,10 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         SavedState savedState = (SavedState) state;
         super.onRestoreInstanceState(savedState.getSuperState());
 
-        ArrayList<Uri> thumbnailsPaths = savedState.getThumbnailsPaths();
+        Uri thumbnailPath = savedState.getThumbnailPath();
         String takePicturePath = savedState.getTakePicturePath();
 
-        restoreState(thumbnailsPaths, takePicturePath);
+        restoreState(thumbnailPath, takePicturePath);
     }
 
     /**
@@ -122,17 +112,13 @@ public class Patio extends LinearLayout implements View.OnClickListener {
     public void init(Context context, AttributeSet attributeSet) {
         //Setup defaults
         mContext = context;
-        mMaxPictures = DEFAULT_MAX_PICTURES;
-        mThumbnailHeight = mContext.getResources().getDimension(R.dimen.patio_default_thumbnail_height);
-        mThumbnailWidth = mContext.getResources().getDimension(R.dimen.patio_default_thumbnail_width);
-        mThumbnailsMessageString = mContext.getResources().getString(R.string.patio_thumbnails_message);
-        mPatioThumbnails = new ArrayList<PatioThumbnail>();
+        mThumbnailContainerHeight = mContext.getResources().getDimension(R.dimen.patio_default_thumbnail_container_height);
         setOrientation(VERTICAL);
 
         //Local defaults
         float thumbnailsContainerPadding = mContext.getResources().getDimension(R.dimen.patio_default_thumbnails_container_padding);
         int actionsTextColor = mContext.getResources().getColor(R.color.patio_default_action_text_color);
-        int thumbnailsWrapperBackground = mContext.getResources().getColor(R.color.patio_default_thumbnails_container_background);
+        int thumbnailContainerBackground = mContext.getResources().getColor(R.color.patio_default_thumbnails_container_background);
 
 
         //Inflate view and setup controls
@@ -144,9 +130,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         mRemovePicture = (Button) findViewById(R.id.patio_action_remove_picture);
         mCancel = (Button) findViewById(R.id.patio_action_cancel);
         //Containers
-        mThumbnailsWrapper = (HorizontalScrollView) findViewById(R.id.patio_thumbnails_wrapper);
-        mThumbnailsContainer = (LinearLayout) findViewById(R.id.patio_thumbnails_container);
-        mThumbnailsCount = (TextView) findViewById(R.id.patio_thumbnails_count_message);
+        mThumbnailsContainer = (FrameLayout) findViewById(R.id.patio_thumbnail_container);
         //Toolbars
         mToolbarAddActions = (LinearLayout) findViewById(R.id.patio_add_actions_toolbar);
         mToolbarRemoveActions = (LinearLayout) findViewById(R.id.patio_remove_actions_toolbar);
@@ -164,28 +148,14 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         if (attributeSet != null) {
             TypedArray a = mContext.getTheme().obtainStyledAttributes(attributeSet, R.styleable.Patio, 0, 0);
             try {
-                //Runtime
-                mMaxPictures = a.getInt(R.styleable.Patio_maxPictures, DEFAULT_MAX_PICTURES);
-                mThumbnailHeight = a.getDimension(R.styleable.Patio_thumbnailHeight, mThumbnailHeight);
-                mThumbnailWidth = a.getDimension(R.styleable.Patio_thumbnailWidth, mThumbnailWidth);
-                mThumbnailsMessageString = a.getString(R.styleable.Patio_thumbnailsMessage);
                 //Local
-                thumbnailsContainerPadding = a.getDimension(R.styleable.Patio_thumbnailsContainerPadding, thumbnailsContainerPadding);
+                mThumbnailContainerHeight = a.getDimension(R.styleable.Patio_thumbnailContainerHeight, mThumbnailContainerHeight);
+                thumbnailsContainerPadding = a.getDimension(R.styleable.Patio_thumbnailContainerPadding, thumbnailsContainerPadding);
                 actionsTextColor = a.getColor(R.styleable.Patio_actionsTextColor, actionsTextColor);
-                thumbnailsWrapperBackground = a.getColor(R.styleable.Patio_thumbnailsContainerBackground, thumbnailsWrapperBackground);
+                thumbnailContainerBackground = a.getColor(R.styleable.Patio_thumbnailContainerBackground, thumbnailContainerBackground);
             } finally {
                 a.recycle();
             }
-        }
-
-        //Check Max Pictures
-        if (mMaxPictures <= 0) {
-            mMaxPictures = DEFAULT_MAX_PICTURES;
-        }
-
-        //Check Thumbnail Message
-        if (mThumbnailsMessageString == null) {
-            mThumbnailsMessageString = mContext.getResources().getString(R.string.patio_thumbnails_message);
         }
 
         //Setup actions text color
@@ -195,63 +165,35 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         mCancel.setTextColor(actionsTextColor);
 
         //Setup thumbnails container background
-        mThumbnailsWrapper.setBackgroundColor(thumbnailsWrapperBackground);
+        mThumbnailsContainer.setBackgroundColor(thumbnailContainerBackground);
 
         //Setup dimensions
         ViewGroup.LayoutParams layoutParams;
         int paddingTop, paddingBottom, paddingLeft, paddingRight;
-        //Thumbnails Wrapper height
-        layoutParams = mThumbnailsWrapper.getLayoutParams();
-        layoutParams.height = Float.valueOf(mThumbnailHeight).intValue();
-        mThumbnailsWrapper.setLayoutParams(layoutParams);
-        //Thumbnails Container padding
+        //Thumbnail container height
+        layoutParams = mThumbnailsContainer.getLayoutParams();
+        layoutParams.height = (int) mThumbnailContainerHeight;
+        mThumbnailsContainer.setLayoutParams(layoutParams);
+        //Thumbnail container padding
         paddingTop = paddingBottom = paddingLeft = paddingRight = Float.valueOf(thumbnailsContainerPadding).intValue();
         mThumbnailsContainer.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
-
-        //Init Thumbnails Message
-        updateThumbnailsMessage();
     }
 
-    public void restoreState(ArrayList<Uri> thumbnailsPaths, String takePicturePath) {
-        for (Uri thumbnailUri : thumbnailsPaths) {
-            addThumbnail(thumbnailUri);
-        }
+    public void restoreState(Uri thumbnailPath, String takePicturePath) {
+        setThumbnail(thumbnailPath);
         mTakePicturePath = takePicturePath;
     }
 
-    public void addThumbnail(Uri thumbnailUri) {
-        LayoutInflater inflater = LayoutInflater.from(mContext);
-        ImageView imageView = (ImageView) inflater.inflate(THUMBNAIL_LAYOUT_RES_ID, mThumbnailsContainer, false);
+    public void setThumbnail(Uri thumbnailUri) {
+        removeCurrentThumbnail();
 
-        int resizeDimension = mThumbnailWidth > mThumbnailHeight ?
-                Float.valueOf(mThumbnailWidth).intValue() :
-                Float.valueOf(mThumbnailHeight).intValue();
-        Picasso.with(mContext)
-                .load(thumbnailUri)
-                .resize(resizeDimension, resizeDimension)
-                .centerCrop()
-                .into(imageView);
+        int resizeDimension = (int) mThumbnailContainerHeight;
 
-        ViewGroup.LayoutParams layoutParams = imageView.getLayoutParams();
-        layoutParams.width = Float.valueOf(mThumbnailWidth).intValue();
-        layoutParams.height = Float.valueOf(mThumbnailHeight).intValue();
-        mThumbnailsContainer.addView(imageView, 0, layoutParams);
-        imageView.setOnClickListener(this);
+        mPatioThumbnail = new PatioThumbnail(mContext);
+        mPatioThumbnail.setUri(thumbnailUri, resizeDimension, resizeDimension);
 
-        mPatioThumbnails.add(new PatioThumbnail(thumbnailUri, imageView));
-        updateThumbnailsMessage();
-    }
-
-    public void updateThumbnailsMessage() {
-        int count = mPatioThumbnails.size();
-        Resources res = mContext.getResources();
-        String thumbnailsCountMessage = String.format(mThumbnailsMessageString, count, mMaxPictures);
-        mThumbnailsCount.setText(thumbnailsCountMessage);
-
-        //Check actions button if max pictures reached
-        boolean actionsEnabled = mPatioThumbnails.size() < mMaxPictures;
-        mTakePicture.setEnabled(actionsEnabled);
-        mAttachPicture.setEnabled(actionsEnabled);
+        mThumbnailsContainer.addView(mPatioThumbnail);
+        mPatioThumbnail.setOnRemoveClickListener(this);
     }
 
     public void setCallbacksListener(PatioCallbacks listener) {
@@ -287,7 +229,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
     public void handleTakePictureResult(Intent data) {
         Log.d(TAG, "File Path: " + mTakePicturePath);
 
-        addThumbnail(Uri.fromFile(new File(mTakePicturePath)));
+        setThumbnail(Uri.fromFile(new File(mTakePicturePath)));
         PatioUtils.addNewImageToGallery(mContext, mTakePicturePath);
     }
 
@@ -296,7 +238,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
         String filePath = PatioUtils.getRealPathFromURI(mContext, uri);
         Log.d(TAG, "File Path: " + filePath);
 
-        addThumbnail(uri);
+        setThumbnail(uri);
     }
 
     public void showAddToolbar() {
@@ -316,45 +258,22 @@ public class Patio extends LinearLayout implements View.OnClickListener {
     }
 
     public void cancelThumbnailSelection() {
-        for (PatioThumbnail patioThumbnail : mPatioThumbnails) {
-            patioThumbnail.setSelected(false);
-        }
+        mPatioThumbnail.setSelected(false);
         checkToolbarsStatus();
     }
 
-    public void removeSelectedThumbnails() {
-        for (int i = mPatioThumbnails.size() - 1; i >= 0; i--) {
-            if (mPatioThumbnails.get(i).isSelected()) {
-                ImageView thumbnailView = mPatioThumbnails.get(i).getThumbnailView();
-                mThumbnailsContainer.removeView(thumbnailView);
-                mPatioThumbnails.remove(i);
-            }
-        }
-        updateThumbnailsMessage();
+    public void removeCurrentThumbnail() {
+        mThumbnailsContainer.removeView(mPatioThumbnail);
+        mPatioThumbnail = null;
         checkToolbarsStatus();
     }
 
     public void checkToolbarsStatus() {
-        boolean thumbnailsSelected = false;
-        for (PatioThumbnail patioThumbnail : mPatioThumbnails) {
-            if (patioThumbnail.getThumbnailView().getAlpha() == 0.5f) {
-                thumbnailsSelected = true;
-                break;
-            }
-        }
-
-        if (thumbnailsSelected)
-            showRemoveToolbar();
-        else
-            showAddToolbar();
+        showAddToolbar();
     }
 
-    public ArrayList<Uri> getThumbnailsUris() {
-        ArrayList<Uri> thumbnailsPaths = new ArrayList<Uri>();
-        for (PatioThumbnail patioThumbnail : mPatioThumbnails) {
-            thumbnailsPaths.add(patioThumbnail.getThumbnailUri());
-        }
-        return thumbnailsPaths;
+    public Uri getThumbnailUri() {
+        return mPatioThumbnail == null ? null : mPatioThumbnail.getThumbnailUri();
     }
 
     /**
@@ -371,25 +290,17 @@ public class Patio extends LinearLayout implements View.OnClickListener {
                 mListener.onAddPictureClick();
             }
             if (view.getId() == R.id.patio_action_remove_picture) {
-                removeSelectedThumbnails();
+                removeCurrentThumbnail();
             }
             if (view.getId() == R.id.patio_action_cancel) {
                 cancelThumbnailSelection();
             }
         }
+    }
 
-        //Thumbnails
-        if (view instanceof ImageView) {
-            //Check for PatioThumbnail
-            for (PatioThumbnail patioThumbnail : mPatioThumbnails) {
-                //Inverse selection for selected thumbnail
-                if (patioThumbnail.getThumbnailView().equals(view)) {
-                    patioThumbnail.setSelected(!patioThumbnail.isSelected());
-                    break;
-                }
-            }
-            checkToolbarsStatus();
-        }
+    @Override
+    public void onRemoveClicked(PatioThumbnail thumbnail) {
+        removeCurrentThumbnail();
     }
 
     /**
@@ -405,7 +316,7 @@ public class Patio extends LinearLayout implements View.OnClickListener {
      * SavedState class for restoring view state
      */
     protected static class SavedState extends BaseSavedState {
-        public ArrayList<Uri> mThumbnailsPaths;
+        public Uri mThumbnailsPath;
         private String mTakePictureFilePath;
 
         public SavedState(Parcelable superState) {
@@ -414,14 +325,14 @@ public class Patio extends LinearLayout implements View.OnClickListener {
 
         public SavedState(Parcel in) {
             super(in);
-            mThumbnailsPaths = in.readArrayList(String.class.getClassLoader());
+            mThumbnailsPath = in.readParcelable(Uri.class.getClassLoader());
             mTakePictureFilePath = in.readString();
         }
 
         @Override
         public void writeToParcel(Parcel out, int flags) {
             super.writeToParcel(out, flags);
-            out.writeList(mThumbnailsPaths);
+            out.writeParcelable(mThumbnailsPath, 0);
             out.writeString(mTakePictureFilePath);
         }
 
@@ -435,12 +346,12 @@ public class Patio extends LinearLayout implements View.OnClickListener {
             }
         };
 
-        public void setThumbnailsPaths(ArrayList<Uri> thumbnailsPaths) {
-            mThumbnailsPaths = thumbnailsPaths;
+        public void setThumbnailsPath(Uri thumbnailsPath) {
+            mThumbnailsPath = thumbnailsPath;
         }
 
-        public ArrayList<Uri> getThumbnailsPaths() {
-            return mThumbnailsPaths;
+        public Uri getThumbnailPath() {
+            return mThumbnailsPath;
         }
 
         public void setTakePicturePath(String takePictureFilePath) {
