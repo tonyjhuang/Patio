@@ -8,17 +8,17 @@
     <com.tonyjhuang.patio.Patio
         android:id="@+id/patio"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/text"
         app:actionsTextColor="#333"
+        app:thumbnailContainerHeight="256dp"
         app:thumbnailContainerBackground="#ddd"
-        app:thumbnailContainerHeight="200dp"
         app:thumbnailContainerPadding="10dp" />
 
     <TextView
+        android:id="@+id/text"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_above="@+id/patio"
+        android:layout_height="200dp"
         android:background="#fff3f3f3"
         android:text="hello" />
 </RelativeLayout>

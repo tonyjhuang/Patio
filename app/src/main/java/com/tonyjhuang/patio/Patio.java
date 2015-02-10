@@ -105,7 +105,6 @@ public class Patio extends LinearLayout implements
     public void init(Context context, AttributeSet attributeSet) {
         //Setup defaults
         mContext = context;
-        mThumbnailContainerHeight = mContext.getResources().getDimension(R.dimen.patio_default_thumbnail_container_height);
         setOrientation(VERTICAL);
 
         //Local defaults
@@ -136,7 +135,7 @@ public class Patio extends LinearLayout implements
             TypedArray a = mContext.getTheme().obtainStyledAttributes(attributeSet, R.styleable.Patio, 0, 0);
             try {
                 //Local
-                mThumbnailContainerHeight = a.getDimension(R.styleable.Patio_thumbnailContainerHeight, mThumbnailContainerHeight);
+                mThumbnailContainerHeight = a.getDimension(R.styleable.Patio_thumbnailContainerHeight, -1);
                 thumbnailsContainerPadding = a.getDimension(R.styleable.Patio_thumbnailContainerPadding, thumbnailsContainerPadding);
                 actionsTextColor = a.getColor(R.styleable.Patio_actionsTextColor, actionsTextColor);
                 thumbnailContainerBackground = a.getColor(R.styleable.Patio_thumbnailContainerBackground, thumbnailContainerBackground);
@@ -153,15 +152,31 @@ public class Patio extends LinearLayout implements
         mThumbnailsContainer.setBackgroundColor(thumbnailContainerBackground);
 
         //Setup dimensions
-        ViewGroup.LayoutParams layoutParams;
         int paddingTop, paddingBottom, paddingLeft, paddingRight;
-        //Thumbnail container height
-        layoutParams = mThumbnailsContainer.getLayoutParams();
-        layoutParams.height = (int) mThumbnailContainerHeight;
-        mThumbnailsContainer.setLayoutParams(layoutParams);
+        //Thumbnail container height & width
+        ViewGroup.LayoutParams layoutParams = mThumbnailsContainer.getLayoutParams();
+        setThumbnailContainerLayoutParams(layoutParams.width, (int) mThumbnailContainerHeight);
         //Thumbnail container padding
         paddingTop = paddingBottom = paddingLeft = paddingRight = Float.valueOf(thumbnailsContainerPadding).intValue();
         mThumbnailsContainer.setPadding(paddingLeft, paddingTop, paddingRight, paddingBottom);
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (mThumbnailContainerHeight == -1) {
+            int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
+            int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
+            setThumbnailContainerLayoutParams(parentWidth, parentHeight);
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+
+    private void setThumbnailContainerLayoutParams(int width, int height) {
+        ViewGroup.LayoutParams layoutParams = mThumbnailsContainer.getLayoutParams();
+        layoutParams.width = width;
+        layoutParams.height = height;
+        mThumbnailsContainer.setLayoutParams(layoutParams);
+        mThumbnailContainerHeight = height;
     }
 
     public void restoreState(Uri thumbnailPath, String takePicturePath) {
@@ -173,10 +188,8 @@ public class Patio extends LinearLayout implements
         showAddToolbar(false);
         removeCurrentThumbnail();
 
-        int resizeDimension = (int) mThumbnailContainerHeight;
-
         mPatioThumbnail = new PatioThumbnail(mContext);
-        mPatioThumbnail.setUri(thumbnailUri, resizeDimension, resizeDimension);
+        mPatioThumbnail.setUri(thumbnailUri, mThumbnailsContainer.getWidth(), mThumbnailsContainer.getHeight());
 
         mThumbnailsContainer.addView(mPatioThumbnail);
         mPatioThumbnail.setOnRemoveClickListener(this);
